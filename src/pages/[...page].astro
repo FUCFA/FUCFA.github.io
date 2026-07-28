@@ -71,7 +71,7 @@ const len = page.data.length;
                         <h2 class="mb-3 text-lg font-bold text-90">Những thứ mình thích</h2>
                         <div class="flex flex-wrap gap-2">
                             {(profileConfig.interests ?? []).map((item) => (
-                                <span class="rounded-lg bg-[var(--primary)]/10 px-3 py-2 text-sm font-medium text-[var(--primary)]">{item}</span>
+                                <span class="rounded-lg border border-black/10 bg-black/5 px-3 py-2 text-sm font-medium text-[var(--primary)] dark:border-white/10 dark:bg-white/10">{item}</span>
                             ))}
                         </div>
                     </div>
