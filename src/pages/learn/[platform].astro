@@ -1,0 +1,227 @@
+---
+import { getCollection } from "astro:content";
+import { Icon } from "astro-icon/components";
+import MainGridLayout from "@layouts/MainGridLayout.astro";
+import Markdown from "@components/misc/Markdown.astro";
+import StatusBadge from "@components/misc/StatusBadge.astro";
+import { getPostUrlBySlug, getTagUrl } from "@utils/url-utils";
+
+export async function getStaticPaths() {
+	const platforms = ["hackthebox", "tryhackme", "portswigger"] as const;
+	return platforms.map((platform) => ({ params: { platform } }));
+}
+
+const { platform } = Astro.params;
+const titles: Record<string, string> = {
+	hackthebox: "Hack The Box",
+	tryhackme: "Try Hack Me",
+	portswigger: "PortSwigger",
+};
+
+const posts = (await getCollection("posts"))
+	.filter((post) => post.data.platform === platform && !post.data.draft)
+	.sort((a, b) => b.data.published.valueOf() - a.data.published.valueOf());
+
+const postViews = await Promise.all(
+	posts.map(async (post) => {
+		const { Content } = await post.render();
+		return { post, Content };
+	}),
+);
+
+const folders = postViews.reduce(
+	(grouped, view) => {
+		const folder = view.post.data.category?.trim() || "Chưa phân loại";
+		grouped[folder] = grouped[folder] ?? [];
+		grouped[folder].push(view);
+		return grouped;
+	},
+	{} as Record<string, typeof postViews>,
+);
+
+const folderEntries = Object.entries(folders).sort(([a], [b]) => a.localeCompare(b));
+const totalTags = new Set(posts.flatMap((post) => post.data.tags)).size;
+const firstPostId = postViews[0]?.post.id ?? "";
+---
+
+<MainGridLayout title={titles[platform!]} description={`Markdown library for ${titles[platform!]}`} hideSidebar={true}>
+	<section class="card-base mb-4 overflow-hidden">
+		<div class="border-b border-black/10 px-6 py-5 dark:border-white/10 md:px-8">
+			<div class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+				<div>
+					<p class="mb-2 text-sm font-semibold text-[var(--primary)]">Learn Platform</p>
+					<h1 class="text-3xl font-bold text-90">{titles[platform!]}</h1>
+					<p class="mt-2 text-75">Duyệt file Markdown theo cấu trúc thư mục và đọc nội dung trực tiếp trong workspace.</p>
+				</div>
+				<div class="grid grid-cols-3 gap-2 text-center">
+					<div class="rounded-lg bg-black/[0.04] px-3 py-2 dark:bg-white/[0.08]">
+						<p class="text-xl font-bold text-90">{folderEntries.length}</p>
+						<p class="text-xs text-50">Folders</p>
+					</div>
+					<div class="rounded-lg bg-black/[0.04] px-3 py-2 dark:bg-white/[0.08]">
+						<p class="text-xl font-bold text-90">{posts.length}</p>
+						<p class="text-xs text-50">Files</p>
+					</div>
+					<div class="rounded-lg bg-black/[0.04] px-3 py-2 dark:bg-white/[0.08]">
+						<p class="text-xl font-bold text-90">{totalTags}</p>
+						<p class="text-xs text-50">Tags</p>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<div id="platform-workspace" class="grid min-h-[38rem] transition-[grid-template-columns] duration-300 lg:grid-cols-[18rem_minmax(0,1fr)]">
+			<aside id="platform-sidebar" class="border-b border-black/10 bg-black/[0.02] p-4 transition dark:border-white/10 dark:bg-white/[0.04] lg:border-b-0 lg:border-r">
+				<div class="mb-3 flex items-center justify-between gap-3">
+					<h2 class="sidebar-title text-sm font-bold uppercase text-50">Explorer</h2>
+					<button id="sidebar-toggle" class="btn-regular h-9 w-9 rounded-lg" type="button" aria-label="Toggle explorer">
+						<Icon name="material-symbols:left-panel-close-outline-rounded" class="toggle-open text-xl" />
+						<Icon name="material-symbols:left-panel-open-outline-rounded" class="toggle-closed hidden text-xl" />
+					</button>
+				</div>
+
+				<div id="folder-tree" class="flex flex-col gap-1">
+					{folderEntries.length === 0 && (
+						<div class="rounded-lg border border-dashed border-black/15 px-3 py-4 text-sm text-50 dark:border-white/15">
+							Chưa có file Markdown nào trong platform này.
+						</div>
+					)}
+					{folderEntries.map(([folder, folderPosts], folderIndex) => (
+						<div class="tree-folder" data-folder={folder}>
+							<button
+								type="button"
+								class="folder-toggle flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left transition hover:bg-[var(--btn-plain-bg-hover)]"
+								aria-expanded="true"
+							>
+								<Icon name="material-symbols:keyboard-arrow-down-rounded" class="folder-chevron shrink-0 text-xl text-50 transition" />
+								<Icon name="material-symbols:folder-outline-rounded" class="shrink-0 text-xl text-[var(--primary)]" />
+								<span class="min-w-0 flex-1 truncate text-sm font-semibold text-75">{folder}</span>
+								<span class="rounded-md bg-black/5 px-2 py-0.5 text-xs text-50 dark:bg-white/10">{folderPosts.length}</span>
+							</button>
+
+							<div class="tree-files ml-6 mt-1 flex flex-col gap-1 border-l border-black/10 pl-2 dark:border-white/10">
+								{folderPosts.map(({ post }, postIndex) => (
+									<button
+										type="button"
+										class:list={[
+											"file-node flex w-full min-w-0 items-center gap-2 rounded-lg px-2 py-2 text-left text-sm transition hover:bg-[var(--btn-plain-bg-hover)] hover:text-[var(--primary)]",
+											{ "bg-[var(--btn-plain-bg-hover)] text-[var(--primary)]": folderIndex === 0 && postIndex === 0 },
+										]}
+										data-post-id={post.id}
+									>
+										<Icon name="material-symbols:description-outline-rounded" class="shrink-0 text-lg" />
+										<span class="truncate">{post.data.title}</span>
+									</button>
+								))}
+							</div>
+						</div>
+					))}
+				</div>
+			</aside>
+
+			<div class="min-w-0 p-4 md:p-6">
+				{postViews.length === 0 && (
+					<div class="rounded-lg border border-dashed border-black/15 p-6 text-75 dark:border-white/15">
+						Chưa có file nào để hiển thị. Hãy thêm file Markdown có frontmatter <code>platform: {platform}</code> rồi build lại.
+					</div>
+				)}
+
+				{postViews.map(({ post, Content }) => (
+					<article class:list={["content-panel", { hidden: post.id !== firstPostId }]} data-post-id={post.id}>
+						<div class="mb-5 rounded-lg border border-black/10 bg-black/[0.02] p-4 dark:border-white/10 dark:bg-white/[0.04]">
+							<div class="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+								<div class="min-w-0">
+									<h2 class="text-2xl font-bold text-90">{post.data.title}</h2>
+									{post.data.description && <p class="mt-2 text-sm leading-6 text-75">{post.data.description}</p>}
+									<div class="mt-3 flex flex-wrap gap-2">
+										<span class="rounded-md bg-[var(--primary)]/10 px-2 py-1 text-xs font-semibold text-[var(--primary)]">{post.data.category || "Chưa phân loại"}</span>
+										{post.data.tags.map((tag: string) => (
+											<a
+												href={getTagUrl(tag)}
+												aria-label={`View all posts with the ${tag.trim()} tag`}
+												class="rounded-md border border-black/10 bg-black/[0.03] px-2 py-1 text-xs font-semibold text-50 transition hover:border-[var(--primary)] hover:bg-[var(--primary)]/10 hover:text-[var(--primary)] dark:border-white/10 dark:bg-white/[0.06] dark:hover:border-[var(--primary)] dark:hover:bg-[var(--primary)]/15"
+											>
+												#{tag.trim()}
+											</a>
+										))}
+									</div>
+								</div>
+								<div class="flex shrink-0 flex-wrap items-center gap-2">
+									<StatusBadge status={post.data.status} date={post.data.published} />
+									<a href={getPostUrlBySlug(post.slug)} class="btn-regular h-9 rounded-lg px-3 text-sm font-semibold">
+										<Icon name="material-symbols:open-in-new-rounded" class="text-lg" />
+										Open
+									</a>
+								</div>
+							</div>
+						</div>
+
+						<Markdown class="rounded-lg border border-black/10 bg-[var(--card-bg)] px-5 py-5 dark:border-white/10 md:px-7">
+							<Content />
+						</Markdown>
+					</article>
+				))}
+			</div>
+		</div>
+	</section>
+
+	<script is:inline>
+		const workspace = document.querySelector("#platform-workspace");
+		const sidebar = document.querySelector("#platform-sidebar");
+		const sidebarToggle = document.querySelector("#sidebar-toggle");
+		const openIcon = document.querySelector(".toggle-open");
+		const closedIcon = document.querySelector(".toggle-closed");
+
+		sidebarToggle?.addEventListener("click", () => {
+			const isCollapsed = workspace?.classList.toggle("sidebar-collapsed");
+			sidebar?.classList.toggle("p-2", Boolean(isCollapsed));
+			openIcon?.classList.toggle("hidden", Boolean(isCollapsed));
+			closedIcon?.classList.toggle("hidden", !isCollapsed);
+		});
+
+		document.querySelectorAll(".folder-toggle").forEach((button) => {
+			button.addEventListener("click", () => {
+				const folder = button.closest(".tree-folder");
+				const files = folder?.querySelector(".tree-files");
+				const chevron = folder?.querySelector(".folder-chevron");
+				const isClosed = files?.classList.toggle("hidden");
+				button.setAttribute("aria-expanded", String(!isClosed));
+				chevron?.classList.toggle("-rotate-90", Boolean(isClosed));
+			});
+		});
+
+		document.querySelectorAll(".file-node").forEach((button) => {
+			button.addEventListener("click", () => {
+				const postId = button.getAttribute("data-post-id");
+				document.querySelectorAll(".file-node").forEach((node) => {
+					node.classList.toggle("bg-[var(--btn-plain-bg-hover)]", node === button);
+					node.classList.toggle("text-[var(--primary)]", node === button);
+				});
+				document.querySelectorAll(".content-panel").forEach((panel) => {
+					panel.classList.toggle("hidden", panel.getAttribute("data-post-id") !== postId);
+				});
+			});
+		});
+	</script>
+
+	<style>
+		#platform-workspace.sidebar-collapsed {
+			grid-template-columns: 3.5rem minmax(0, 1fr);
+		}
+		#platform-workspace.sidebar-collapsed .sidebar-title,
+		#platform-workspace.sidebar-collapsed #folder-tree {
+			display: none;
+		}
+		#platform-workspace.sidebar-collapsed #platform-sidebar {
+			overflow: hidden;
+		}
+		@media (max-width: 1023px) {
+			#platform-workspace.sidebar-collapsed {
+				grid-template-columns: 1fr;
+			}
+			#platform-workspace.sidebar-collapsed #platform-sidebar {
+				display: none;
+			}
+		}
+	</style>
+</MainGridLayout>

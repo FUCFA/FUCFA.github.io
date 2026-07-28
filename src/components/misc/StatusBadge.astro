@@ -1,0 +1,32 @@
+---
+interface Props {
+	status: "not-started" | "in-progress" | "completed";
+	date: Date;
+}
+
+const { status, date } = Astro.props;
+
+const label = {
+	"not-started": "Chưa bắt đầu",
+	"in-progress": "Đang làm",
+	completed: "Hoàn thành",
+}[status];
+
+const dotClass = {
+	"not-started": "bg-gray-400",
+	"in-progress": "bg-[oklch(0.75_0.18_290)]",
+	completed: "bg-[oklch(0.7_0.2_300)]",
+}[status];
+
+const formatted = new Intl.DateTimeFormat("vi-VN", {
+	day: "2-digit",
+	month: "2-digit",
+	year: "numeric",
+}).format(date);
+---
+
+<div class="flex items-center gap-2 text-sm text-75">
+	<span class={`inline-block h-2 w-2 shrink-0 rounded-full ${dotClass}`}></span>
+	<span class="font-medium text-75">{label}</span>
+	<span class="text-black/50 dark:text-white/50">- {formatted}</span>
+</div>

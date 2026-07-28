@@ -1,0 +1,340 @@
+---
+import { getCollection } from "astro:content";
+import { Icon } from "astro-icon/components";
+import ImageWrapper from "@components/misc/ImageWrapper.astro";
+import StatusBadge from "@components/misc/StatusBadge.astro";
+import { profileConfig } from "../config";
+import I18nKey from "../i18n/i18nKey";
+import { i18n } from "../i18n/translation";
+import MainGridLayout from "../layouts/MainGridLayout.astro";
+import { getPostUrlBySlug, url } from "../utils/url-utils";
+
+const posts = (await getCollection("posts"))
+	.filter((post) => !post.data.draft)
+	.sort((a, b) => b.data.published.valueOf() - a.data.published.valueOf());
+
+const today = new Date();
+today.setHours(0, 0, 0, 0);
+
+function toDateKey(date: Date) {
+	const year = date.getFullYear();
+	const month = String(date.getMonth() + 1).padStart(2, "0");
+	const day = String(date.getDate()).padStart(2, "0");
+	return `${year}-${month}-${day}`;
+}
+
+const dailyContributionMap = new Map<string, number>();
+const postYears = new Set<number>();
+for (const post of posts) {
+	const published = new Date(post.data.published);
+	published.setHours(0, 0, 0, 0);
+	const key = toDateKey(published);
+	dailyContributionMap.set(key, (dailyContributionMap.get(key) ?? 0) + 1);
+	postYears.add(published.getFullYear());
+}
+
+const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const weekdays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+const selectedYear = today.getFullYear();
+const yearOptions = Array.from(
+	new Set([
+		selectedYear,
+		selectedYear - 1,
+		selectedYear - 2,
+		selectedYear - 3,
+		selectedYear - 4,
+		...postYears,
+	]),
+).sort((a, b) => b - a);
+
+const visibleMonths = months.map((label, index) => ({ label, index }));
+
+function createYearCells(year: number) {
+	const cells = Array.from({ length: 12 * 4 }, (_, columnIndex) =>
+		Array.from({ length: 7 }, (_, rowIndex) => ({
+			columnIndex,
+			rowIndex,
+			count: 0,
+			level: 0,
+			rangeLabel: "",
+		})),
+	);
+
+	for (let monthIndex = 0; monthIndex < 12; monthIndex++) {
+		const lastDay = new Date(year, monthIndex + 1, 0).getDate();
+		for (let bucket = 0; bucket < 4; bucket++) {
+			const startDay = bucket * 7 + 1;
+			const endDay = bucket === 3 ? lastDay : Math.min(startDay + 6, lastDay);
+			const label = `${months[monthIndex]} ${startDay}-${endDay}, ${year}`;
+			for (const cell of cells[monthIndex * 4 + bucket]) {
+				cell.rangeLabel = label;
+			}
+		}
+	}
+
+	for (const [dateKey, count] of dailyContributionMap) {
+		const [entryYear, month, day] = dateKey.split("-").map(Number);
+		if (entryYear !== year) continue;
+
+		const date = new Date(entryYear, month - 1, day);
+		const monthIndex = date.getMonth();
+		const weekBucket = Math.min(Math.floor((date.getDate() - 1) / 7), 3);
+		const rowIndex = (date.getDay() + 6) % 7;
+		const cell = cells[monthIndex * 4 + weekBucket][rowIndex];
+		cell.count += count;
+		cell.level = Math.min(cell.count, 4);
+	}
+
+	return cells;
+}
+
+const contributionCells = createYearCells(selectedYear);
+const contributionMonths = visibleMonths.map((month) => ({
+	...month,
+	columns: contributionCells.slice(month.index * 4, month.index * 4 + 4),
+}));
+const contributionData = Object.fromEntries(
+	yearOptions.map((year) => [year, createYearCells(year).flat()]),
+);
+const totalContributions = contributionData[selectedYear].reduce(
+	(total, cell) => total + cell.count,
+	0,
+);
+const contributionLabel =
+	totalContributions === 1
+		? `1 đóng góp trong năm ${selectedYear}`
+		: `${totalContributions} đóng góp trong năm ${selectedYear}`;
+
+const categories = new Set(posts.map((post) => post.data.category || "Chưa phân loại"));
+const platforms = new Set(posts.map((post) => post.data.platform).filter(Boolean));
+
+function linkHref(href: string) {
+	if (href.startsWith("/") || href.startsWith("#")) return url(href);
+	return href;
+}
+---
+
+<MainGridLayout title={i18n(I18nKey.about)} description={i18n(I18nKey.about)} hideSidebar={true}>
+	<div class="grid min-w-0 gap-4 lg:grid-cols-[18rem_minmax(0,1fr)]">
+		<aside class="card-base p-4">
+			<div class="overflow-hidden rounded-xl">
+				<ImageWrapper src={profileConfig.avatar || ""} alt="Profile Image of the Author" class="w-full" />
+			</div>
+
+			<div class="mt-4">
+				<h1 class="text-2xl font-bold text-90">{profileConfig.name}</h1>
+				{profileConfig.role && <p class="mt-1 text-sm font-semibold text-[var(--primary)]">{profileConfig.role}</p>}
+				{profileConfig.bio && <p class="mt-3 text-sm leading-6 text-75">{profileConfig.bio}</p>}
+			</div>
+
+			<div class="mt-4 flex flex-col gap-2 text-sm text-75">
+				{profileConfig.location && (
+					<div class="flex items-center gap-2">
+						<Icon name="material-symbols:location-on-outline-rounded" class="text-xl text-50" />
+						{profileConfig.location}
+					</div>
+				)}
+				<div class="flex items-center gap-2">
+					<Icon name="material-symbols:upload-file-outline-rounded" class="text-xl text-50" />
+					{posts.length} tệp đã đăng
+				</div>
+				<div class="flex items-center gap-2">
+					<Icon name="material-symbols:folder-outline-rounded" class="text-xl text-50" />
+					{categories.size} danh mục
+				</div>
+				<div class="flex items-center gap-2">
+					<Icon name="fa6-solid:network-wired" class="text-base text-50" />
+					{platforms.size} nền tảng
+				</div>
+			</div>
+
+			<div class="mt-5 flex flex-wrap gap-2">
+				{profileConfig.links.map((item) => (
+					<a rel="me" aria-label={item.name} href={linkHref(item.url)} target={item.url.startsWith("/") ? null : "_blank"} class="btn-regular h-10 w-10 rounded-lg active:scale-90">
+						<Icon name={item.icon} class="text-[1.35rem]" />
+					</a>
+				))}
+			</div>
+
+			{(profileConfig.interests ?? []).length > 0 && (
+				<div class="mt-5">
+					<h2 class="mb-3 text-sm font-bold uppercase text-50">Sở thích</h2>
+					<div class="flex flex-wrap gap-2">
+						{profileConfig.interests?.map((item) => (
+							<span class="rounded-lg bg-black/[0.04] px-3 py-2 text-sm font-semibold text-[var(--primary)] dark:bg-white/[0.08]">{item}</span>
+						))}
+					</div>
+				</div>
+			)}
+		</aside>
+
+		<div class="flex min-w-0 flex-col gap-4">
+			<section class="card-base min-w-0 overflow-hidden">
+				<div class="border-b border-black/10 px-5 py-4 dark:border-white/10 md:px-6">
+					<div class="flex min-w-0 flex-col gap-2 md:flex-row md:items-center md:justify-between">
+						<h2 id="contribution-title" class="text-xl font-bold text-90">{contributionLabel}</h2>
+						<div class="flex items-center gap-3">
+							<label class="text-sm font-semibold text-50" for="contribution-year">Năm</label>
+							<select id="contribution-year" class="rounded-lg border border-black/10 bg-[var(--card-bg)] px-3 py-2 text-sm font-semibold text-75 outline-none transition focus:border-[var(--primary)] dark:border-white/10">
+								{yearOptions.map((year) => (
+									<option class="bg-white text-neutral-900 dark:bg-neutral-900 dark:text-white" value={year} selected={year === selectedYear}>{year}</option>
+								))}
+							</select>
+						</div>
+					</div>
+				</div>
+
+				<div class="overflow-x-auto px-5 py-5 md:px-6">
+					<div class="w-max min-w-full">
+						<div class="ml-10 flex gap-[0.18rem] text-xs text-50">
+							{visibleMonths.map((month) => (
+								<div class="grid w-[calc(4_*_0.9rem_+_3_*_0.22rem)] grid-cols-[repeat(4,0.9rem)] gap-[0.22rem]">
+									<div class="col-span-2 h-5 whitespace-nowrap">{month.label}</div>
+									<div class="col-span-2 h-5"></div>
+								</div>
+							))}
+						</div>
+
+						<div class="mt-2 grid grid-cols-[2rem_auto] gap-2">
+							<div class="grid grid-rows-7 gap-[0.22rem] text-xs text-50">
+								{weekdays.map((weekday) => <div class="h-[0.9rem] leading-[0.9rem]">{weekday}</div>)}
+							</div>
+							<div class="flex gap-[0.22rem]">
+								{contributionMonths.map((month) => (
+									<div class="grid grid-flow-col grid-rows-7 gap-[0.22rem]">
+										{month.columns.flatMap((column) =>
+											column.map((cell) => {
+												const cellIndex = cell.columnIndex * 7 + cell.rowIndex;
+												return (
+												<div
+													data-contribution-cell
+													data-cell-index={cellIndex}
+													data-level={cell.level}
+													title={`${cell.count} tệp được đăng trong ${cell.rangeLabel}`}
+													aria-label={`${cell.count} tệp được đăng trong ${cell.rangeLabel}`}
+													class="contribution-cell h-[0.9rem] w-[0.9rem] rounded-[0.18rem] border border-black/5 dark:border-white/5"
+												></div>
+												);
+											}),
+										)}
+									</div>
+								))}
+							</div>
+						</div>
+
+						<div class="mt-3 flex items-center justify-between gap-4 text-xs text-50">
+							<span>Tính theo ngày published của các file Markdown đã public</span>
+							<div class="flex items-center gap-2">
+								<span>Ít</span>
+								{[0, 1, 2, 3, 4].map((level) => (
+									<span
+										class:list={[
+											"h-[0.9rem] w-[0.9rem] rounded-[0.18rem]",
+											{
+												"bg-[#ebedf0] dark:bg-[#161b22]": level === 0,
+												"bg-[#9be9a8] dark:bg-[#0e4429]": level === 1,
+												"bg-[#40c463] dark:bg-[#006d32]": level === 2,
+												"bg-[#30a14e] dark:bg-[#26a641]": level === 3,
+												"bg-[#216e39] dark:bg-[#39d353]": level === 4,
+											},
+										]}
+									></span>
+								))}
+								<span>Nhiều</span>
+							</div>
+						</div>
+					</div>
+				</div>
+			</section>
+
+			<script is:inline define:vars={{ contributionData }}>
+				const contributionSelect = document.querySelector("#contribution-year");
+				const contributionTitle = document.querySelector("#contribution-title");
+				const contributionCells = Array.from(document.querySelectorAll("[data-contribution-cell]"));
+
+				function updateContributionYear(year) {
+					const cells = contributionData[String(year)] ?? [];
+					let total = 0;
+
+					contributionCells.forEach((element) => {
+						const index = Number(element.getAttribute("data-cell-index"));
+						const cell = cells[index] ?? { count: 0, level: 0, rangeLabel: "" };
+						total += cell.count;
+						element.setAttribute("data-level", String(cell.level));
+						element.setAttribute("title", `${cell.count} tệp được đăng trong ${cell.rangeLabel}`);
+						element.setAttribute("aria-label", `${cell.count} tệp được đăng trong ${cell.rangeLabel}`);
+					});
+
+					if (contributionTitle) {
+						contributionTitle.textContent =
+							total === 1
+								? `1 đóng góp trong năm ${year}`
+								: `${total} đóng góp trong năm ${year}`;
+					}
+				}
+
+				contributionSelect?.addEventListener("change", (event) => {
+					updateContributionYear(event.target.value);
+				});
+			</script>
+
+			<style>
+				.contribution-cell[data-level="0"] {
+					background: #ebedf0;
+				}
+				.contribution-cell[data-level="1"] {
+					background: #9be9a8;
+				}
+				.contribution-cell[data-level="2"] {
+					background: #40c463;
+				}
+				.contribution-cell[data-level="3"] {
+					background: #30a14e;
+				}
+				.contribution-cell[data-level="4"] {
+					background: #216e39;
+				}
+				:global(.dark) .contribution-cell[data-level="0"] {
+					background: #161b22;
+				}
+				:global(.dark) .contribution-cell[data-level="1"] {
+					background: #0e4429;
+				}
+				:global(.dark) .contribution-cell[data-level="2"] {
+					background: #006d32;
+				}
+				:global(.dark) .contribution-cell[data-level="3"] {
+					background: #26a641;
+				}
+				:global(.dark) .contribution-cell[data-level="4"] {
+					background: #39d353;
+				}
+			</style>
+
+			<section class="card-base min-w-0 px-5 py-5 md:px-6">
+				<div class="mb-4 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+					<h2 class="text-xl font-bold text-90">Tệp Markdown đã đăng</h2>
+					<span class="text-sm text-50">Danh sách file public trong repo</span>
+				</div>
+
+				<div class="overflow-hidden rounded-lg border border-black/10 dark:border-white/10">
+					{posts.map((post) => (
+						<a href={getPostUrlBySlug(post.slug)} class="grid min-w-0 gap-3 border-b border-black/10 px-4 py-3 transition last:border-b-0 hover:bg-[var(--btn-plain-bg-hover)] dark:border-white/10 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
+							<div class="min-w-0">
+								<div class="mb-1 flex items-center gap-2">
+									<Icon name="material-symbols:description-outline-rounded" class="shrink-0 text-xl text-[var(--primary)]" />
+									<p class="truncate font-bold text-90">{post.data.title}</p>
+								</div>
+								<p class="truncate text-sm text-50">{post.data.platform || "bài viết"} / {post.data.category || "Chưa phân loại"}</p>
+							</div>
+							<div class="shrink-0">
+								<StatusBadge status={post.data.status} date={post.data.published} />
+							</div>
+						</a>
+					))}
+				</div>
+			</section>
+		</div>
+	</div>
+</MainGridLayout>

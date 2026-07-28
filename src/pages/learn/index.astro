@@ -1,0 +1,91 @@
+---
+import { getCollection } from "astro:content";
+import { Icon } from "astro-icon/components";
+import StatusBadge from "@components/misc/StatusBadge.astro";
+import MainGridLayout from "@layouts/MainGridLayout.astro";
+import { getPostUrlBySlug, url } from "@utils/url-utils";
+
+const platforms = [
+	{
+		id: "hackthebox",
+		name: "Hack The Box",
+		description: "Máy ảo, challenge và ghi chú khai thác theo từng box.",
+		icon: "material-symbols:terminal-rounded",
+	},
+	{
+		id: "tryhackme",
+		name: "Try Hack Me",
+		description: "Room học tập, lý thuyết ngắn và checklist thực hành.",
+		icon: "material-symbols:school-outline-rounded",
+	},
+	{
+		id: "portswigger",
+		name: "PortSwigger",
+		description: "Web security labs, payload và cách suy luận lỗi.",
+		icon: "material-symbols:bug-report-outline-rounded",
+	},
+] as const;
+
+const posts = (await getCollection("posts"))
+	.filter((post) => post.data.platform && !post.data.draft)
+	.sort((a, b) => b.data.published.valueOf() - a.data.published.valueOf());
+
+const stats = Object.fromEntries(
+	platforms.map((platform) => [
+		platform.id,
+		posts.filter((post) => post.data.platform === platform.id),
+	]),
+) as Record<(typeof platforms)[number]["id"], typeof posts>;
+---
+
+<MainGridLayout title="Learn Platform" description="Markdown learning workspace" hideSidebar={true}>
+	<section class="card-base mb-4 px-6 py-6 md:px-8">
+		<p class="mb-2 text-sm font-semibold text-[var(--primary)]">Knowledge workspace</p>
+		<h1 class="text-3xl font-bold text-90">Learn Platform</h1>
+		<p class="mt-2 max-w-2xl text-75">
+			Chọn platform để xem các folder/category và file Markdown đã upload. Mỗi file vẫn mở ra trang đọc riêng có đầy đủ nội dung, tags và category.
+		</p>
+	</section>
+
+	<section class="mb-4 grid gap-4 md:grid-cols-3">
+		{platforms.map((platform) => (
+			<a href={url(`/learn/${platform.id}/`)} class="card-base block p-5 transition hover:-translate-y-0.5 hover:bg-[var(--btn-plain-bg-hover)]">
+				<div class="mb-4 flex h-11 w-11 items-center justify-center rounded-lg bg-[var(--primary)]/10 text-[var(--primary)]">
+					<Icon name={platform.icon} class="text-2xl" />
+				</div>
+				<h2 class="mb-2 text-xl font-bold text-90">{platform.name}</h2>
+				<p class="mb-4 min-h-12 text-sm leading-6 text-75">{platform.description}</p>
+				<div class="flex items-center justify-between border-t border-black/10 pt-4 dark:border-white/10">
+					<span class="text-sm text-50">{stats[platform.id].length} files</span>
+					<span class="flex items-center gap-1 text-sm font-semibold text-[var(--primary)]">
+						Open
+						<Icon name="material-symbols:chevron-right-rounded" class="text-xl" />
+					</span>
+				</div>
+			</a>
+		))}
+	</section>
+
+	<section class="card-base px-6 py-5 md:px-8">
+		<div class="mb-4 flex items-center justify-between gap-3">
+			<h2 class="text-xl font-bold text-90">Mới upload gần đây</h2>
+			<a href={url("/archive/")} class="btn-regular h-10 rounded-lg px-3 text-sm font-semibold">Archive</a>
+		</div>
+
+		{posts.length === 0 && <p class="text-50">Chưa có file platform nào. Hãy thêm frontmatter <code>platform</code> vào Markdown.</p>}
+
+		<div class="flex flex-col gap-3">
+			{posts.slice(0, 6).map((post) => (
+				<a href={getPostUrlBySlug(post.slug)} class="rounded-lg border border-black/10 p-4 transition hover:border-[var(--primary)] hover:bg-[var(--btn-plain-bg-hover)] dark:border-white/10">
+					<div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+						<div class="min-w-0">
+							<p class="truncate font-bold text-90">{post.data.title}</p>
+							<p class="mt-1 text-sm text-50">{post.data.platform} / {post.data.category || "Chưa phân loại"}</p>
+						</div>
+						<StatusBadge status={post.data.status} date={post.data.published} />
+					</div>
+				</a>
+			))}
+		</div>
+	</section>
+</MainGridLayout>

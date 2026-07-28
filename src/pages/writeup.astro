@@ -1,0 +1,33 @@
+---
+import { getCollection } from "astro:content";
+import MainGridLayout from "@layouts/MainGridLayout.astro";
+import StatusBadge from "@components/misc/StatusBadge.astro";
+
+const posts = (await getCollection("posts"))
+  .filter((p) => p.data.platform === "writeup" && !p.data.draft)
+  .sort((a, b) => b.data.published.valueOf() - a.data.published.valueOf());
+---
+<MainGridLayout title="Writeup" description="Danh sách các bài writeup" hideSidebar={true}>
+  <div class="card-base px-6 py-4">
+    <h1 class="text-2xl font-bold mb-4 text-90">Writeup</h1>
+
+    {posts.length === 0 && (
+      <p class="text-50">Chưa có bài writeup nào.</p>
+    )}
+
+    <div class="flex flex-col gap-2">
+      {posts.map((post) => (
+        <a
+          href={"/posts/" + post.slug + "/"}
+          class="link-lg block p-4 rounded-xl bg-[var(--card-bg)] hover:bg-[var(--btn-plain-bg-hover)] transition"
+        >
+          <p class="font-semibold text-90 mb-1">{post.data.title}</p>
+          {post.data.description && (
+            <p class="text-50 text-sm mb-2">{post.data.description}</p>
+          )}
+          <StatusBadge status={post.data.status} date={post.data.published} />
+        </a>
+      ))}
+    </div>
+  </div>
+</MainGridLayout>
