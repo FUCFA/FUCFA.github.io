@@ -137,7 +137,7 @@ onMount(async () => {
                             {#each post.data.tags as tag}
                                 <a
                                     href={getTagUrl(tag)}
-                                    aria-label={View all posts with the ${tag.trim()} tag}
+                                    aria-label={`View all posts with the ${tag.trim()} tag`}
                                     class="max-w-full rounded-md bg-black/[0.03] px-2 py-0.5 text-xs font-semibold text-50 transition hover:border-[var(--primary)] hover:bg-[var(--primary)]/10 hover:text-[var(--primary)] dark:bg-white/[0.06] dark:hover:border-[var(--primary)] dark:hover:bg-[var(--primary)]/15"
                                 >
                                     <span class="block overflow-hidden text-ellipsis whitespace-nowrap">#{tag.trim()}</span>
