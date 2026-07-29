@@ -1,10 +1,10 @@
 ---
 import { getCollection } from "astro:content";
-import { Icon } from "astro-icon/components";
-import MainGridLayout from "@layouts/MainGridLayout.astro";
 import Markdown from "@components/misc/Markdown.astro";
 import StatusBadge from "@components/misc/StatusBadge.astro";
+import MainGridLayout from "@layouts/MainGridLayout.astro";
 import { getPostUrlBySlug, getTagUrl } from "@utils/url-utils";
+import { Icon } from "astro-icon/components";
 
 export async function getStaticPaths() {
 	const platforms = ["hackthebox", "tryhackme", "portswigger"] as const;
@@ -39,7 +39,9 @@ const folders = postViews.reduce(
 	{} as Record<string, typeof postViews>,
 );
 
-const folderEntries = Object.entries(folders).sort(([a], [b]) => a.localeCompare(b));
+const folderEntries = Object.entries(folders).sort(([a], [b]) =>
+	a.localeCompare(b),
+);
 const totalTags = new Set(posts.flatMap((post) => post.data.tags)).size;
 const firstPostId = postViews[0]?.post.id ?? "";
 ---

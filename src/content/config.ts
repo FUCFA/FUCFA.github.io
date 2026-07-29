@@ -11,8 +11,13 @@ const postsCollection: ReturnType<typeof defineCollection> = defineCollection({
 		tags: z.array(z.string()).optional().default([]),
 		category: z.string().optional().nullable().default(""),
 
-		platform: z.enum(["hackthebox", "tryhackme", "portswigger", "writeup"]).optional(),
-      	status: z.enum(["not-started", "in-progress", "completed"]).optional().default("in-progress"),
+		platform: z
+			.enum(["hackthebox", "tryhackme", "portswigger", "writeup"])
+			.optional(),
+		status: z
+			.enum(["not-started", "in-progress", "completed"])
+			.optional()
+			.default("in-progress"),
 
 		lang: z.string().optional().default(""),
 
@@ -26,7 +31,10 @@ const postsCollection: ReturnType<typeof defineCollection> = defineCollection({
 const specCollection: ReturnType<typeof defineCollection> = defineCollection({
 	schema: z.object({}),
 });
-export const collections: Record<string, ReturnType<typeof defineCollection>> = {
+export const collections: Record<
+	string,
+	ReturnType<typeof defineCollection>
+> = {
 	posts: postsCollection,
 	spec: specCollection,
 };

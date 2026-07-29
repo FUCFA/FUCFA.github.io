@@ -1,8 +1,8 @@
 ---
 import { getCollection } from "astro:content";
-import { Icon } from "astro-icon/components";
 import ImageWrapper from "@components/misc/ImageWrapper.astro";
 import StatusBadge from "@components/misc/StatusBadge.astro";
+import { Icon } from "astro-icon/components";
 import { profileConfig } from "../config";
 import I18nKey from "../i18n/i18nKey";
 import { i18n } from "../i18n/translation";
@@ -33,7 +33,20 @@ for (const post of posts) {
 	postYears.add(published.getFullYear());
 }
 
-const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const months = [
+	"Jan",
+	"Feb",
+	"Mar",
+	"Apr",
+	"May",
+	"Jun",
+	"Jul",
+	"Aug",
+	"Sep",
+	"Oct",
+	"Nov",
+	"Dec",
+];
 const weekdays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 const selectedYear = today.getFullYear();
@@ -106,8 +119,12 @@ const contributionLabel =
 		? `1 đóng góp trong năm ${selectedYear}`
 		: `${totalContributions} đóng góp trong năm ${selectedYear}`;
 
-const categories = new Set(posts.map((post) => post.data.category || "Chưa phân loại"));
-const platforms = new Set(posts.map((post) => post.data.platform).filter(Boolean));
+const categories = new Set(
+	posts.map((post) => post.data.category || "Chưa phân loại"),
+);
+const platforms = new Set(
+	posts.map((post) => post.data.platform).filter(Boolean),
+);
 
 function linkHref(href: string) {
 	if (href.startsWith("/") || href.startsWith("#")) return url(href);

@@ -1,11 +1,11 @@
 ---
 import { getCollection } from "astro:content";
-import MainGridLayout from "@layouts/MainGridLayout.astro";
 import StatusBadge from "@components/misc/StatusBadge.astro";
+import MainGridLayout from "@layouts/MainGridLayout.astro";
 
 const posts = (await getCollection("posts"))
-  .filter((p) => p.data.platform === "writeup" && !p.data.draft)
-  .sort((a, b) => b.data.published.valueOf() - a.data.published.valueOf());
+	.filter((p) => p.data.platform === "writeup" && !p.data.draft)
+	.sort((a, b) => b.data.published.valueOf() - a.data.published.valueOf());
 ---
 <MainGridLayout title="Writeup" description="Danh sách các bài writeup" hideSidebar={true}>
   <div class="card-base px-6 py-4">
