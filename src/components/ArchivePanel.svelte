@@ -34,7 +34,9 @@ let groups: Group[] = [];
 function formatDate(date: Date) {
 	const month = (date.getMonth() + 1).toString().padStart(2, "0");
 	const day = date.getDate().toString().padStart(2, "0");
-	return `${month}-${day}`;
+	const hours = date.getHours().toString().padStart(2, "0");
+	const minutes = date.getMinutes().toString().padStart(2, "0");
+	return `${month}-${day} ${hours}:${minutes}`;
 }
 
 onMount(async () => {
@@ -100,7 +102,7 @@ onMount(async () => {
             </div>
 
             {#each group.posts as post}
-                <div class="group btn-plain !block min-h-10 w-full rounded-lg hover:text-[initial]">
+                <div class="group btn-plain !block h-10 w-full rounded-lg hover:text-[initial]">
                     <div class="flex flex-row justify-start items-center h-full">
                         <!-- date -->
                         <div class="w-[15%] md:w-[10%] transition text-sm text-right text-50">

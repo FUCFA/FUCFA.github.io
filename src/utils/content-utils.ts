@@ -2,12 +2,36 @@ import { type CollectionEntry, getCollection } from "astro:content";
 import I18nKey from "@i18n/i18nKey";
 import { i18n } from "@i18n/translation";
 import { getCategoryUrl } from "@utils/url-utils.ts";
+import { execSync } from "node:child_process";
+import path from "node:path";
+
+function getGitFirstCommitDate(filePath: string): Date | null {
+	try {
+		const output = execSync(
+			`git log --diff-filter=A --follow --format=%aI -- "${filePath}" | tail -1`,
+			{ encoding: "utf-8" },
+		).trim();
+		if (!output) return null;
+		return new Date(output);
+	} catch {
+		return null;
+	}
+}
 
 // // Retrieve posts and sort them by publication date
 async function getRawSortedPosts(): Promise<CollectionEntry<"posts">[]> {
 	const allBlogPosts = await getCollection("posts", ({ data }) => {
 		return import.meta.env.PROD ? data.draft !== true : true;
 	});
+
+	// Override published date with the first Git commit date of the file
+	for (const post of allBlogPosts) {
+		const filePath = path.join("src/content/posts", post.id);
+		const gitDate = getGitFirstCommitDate(filePath);
+		if (gitDate) {
+			post.data.published = gitDate;
+		}
+	}
 
 	const sorted = allBlogPosts.sort((a, b) => {
 		const dateA = new Date(a.data.published);

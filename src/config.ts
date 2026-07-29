@@ -57,7 +57,7 @@ export const navBarConfig: NavBarConfig = {
 };
 
 export const profileConfig: ProfileConfig = {
-	avatar: "assets/images/demo-avatar.png", // Relative to the /src directory. Relative to the /public directory if it starts with '/'
+	avatar: "assets/images/chillycat.jpg", // Relative to the /src directory. Relative to the /public directory if it starts with '/'
 	name: "FUCFA",
 	role: "Người học an toàn thông tin",
 	location: "Việt Nam",
@@ -71,12 +71,12 @@ export const profileConfig: ProfileConfig = {
 			icon: "fa6-brands:github", // Visit https://icones.js.org/ for icon codes
 			// You will need to install the corresponding icon set if it's not already included
 			// `pnpm add @iconify-json/<icon-set-name>`
-			url: "https://github.com",
+			url: "https://github.com/FUCFA",
 		},
 		{
 			name: "Email",
 			icon: "fa6-regular:envelope",
-			url: "mailto:you@example.com",
+			url: "mailto:luuhongphuc2k6@gmail.com",
 		},
 		{
 			name: "Archive",

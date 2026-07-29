@@ -329,7 +329,7 @@ function linkHref(href: string) {
 				}
 			</style>
 
-			<section class="card-base min-w-0 px-5 py-5 md:px-6">
+			<section id="markdown-list" class="card-base min-w-0 px-5 py-5 md:px-6">
 				<div class="mb-4 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
 					<h2 class="text-xl font-bold text-90">Tệp Markdown đã đăng</h2>
 					<span class="text-sm text-50">Danh sách file public trong repo</span>
@@ -337,7 +337,7 @@ function linkHref(href: string) {
 
 				<div class="overflow-hidden rounded-lg border border-black/10 dark:border-white/10">
 					{posts.map((post) => (
-						<a href={getPostUrlBySlug(post.slug)} class="grid min-w-0 gap-3 border-b border-black/10 px-4 py-3 transition last:border-b-0 hover:bg-[var(--btn-plain-bg-hover)] dark:border-white/10 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
+						<a href={getPostUrlBySlug(post.slug)} class="about-file-item grid min-w-0 gap-3 border-b border-black/10 px-4 py-3 transition last:border-b-0 hover:bg-[var(--btn-plain-bg-hover)] dark:border-white/10 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
 							<div class="min-w-0">
 								<div class="mb-1 flex items-center gap-2">
 									<Icon name="material-symbols:description-outline-rounded" class="shrink-0 text-xl text-[var(--primary)]" />
@@ -351,7 +351,102 @@ function linkHref(href: string) {
 						</a>
 					))}
 				</div>
+
+				{posts.length > 15 && (
+					<div class="mt-4 flex flex-row justify-center gap-3">
+						<button id="page-first" type="button" aria-label="First Page" class="btn-card flex h-11 w-11 items-center justify-center overflow-hidden rounded-lg text-[var(--primary)]">
+							<Icon name="material-symbols:keyboard-double-arrow-left-rounded" class="text-[1.5rem]" />
+						</button>
+						<button id="page-prev" type="button" aria-label="Previous Page" class="btn-card flex h-11 w-11 items-center justify-center overflow-hidden rounded-lg text-[var(--primary)]">
+							<Icon name="material-symbols:chevron-left-rounded" class="text-[1.75rem]" />
+						</button>
+						<div id="page-numbers" class="flex flex-row items-center rounded-lg bg-[var(--card-bg)] font-bold text-neutral-700 dark:text-neutral-300"></div>
+						<button id="page-next" type="button" aria-label="Next Page" class="btn-card flex h-11 w-11 items-center justify-center overflow-hidden rounded-lg text-[var(--primary)]">
+							<Icon name="material-symbols:chevron-right-rounded" class="text-[1.75rem]" />
+						</button>
+						<button id="page-last" type="button" aria-label="Last Page" class="btn-card flex h-11 w-11 items-center justify-center overflow-hidden rounded-lg text-[var(--primary)]">
+							<Icon name="material-symbols:keyboard-double-arrow-right-rounded" class="text-[1.5rem]" />
+						</button>
+					</div>
+				)}
 			</section>
+
+			<script is:inline>
+				(function () {
+					const items = Array.from(document.querySelectorAll(".about-file-item"));
+					if (items.length <= 15) return;
+					const pageSize = 15;
+					let currentPage = 1;
+					const lastPage = Math.max(1, Math.ceil(items.length / pageSize));
+
+					function render() {
+						currentPage = Math.min(Math.max(1, currentPage), lastPage);
+						const start = (currentPage - 1) * pageSize;
+						const end = start + pageSize;
+						items.forEach((el, idx) => {
+							el.style.display = idx >= start && idx < end ? "" : "none";
+						});
+						renderPageNumbers();
+						document.getElementById("page-first")?.classList.toggle("disabled", currentPage === 1);
+						document.getElementById("page-prev")?.classList.toggle("disabled", currentPage === 1);
+						document.getElementById("page-next")?.classList.toggle("disabled", currentPage === lastPage);
+						document.getElementById("page-last")?.classList.toggle("disabled", currentPage === lastPage);
+					}
+
+					function renderPageNumbers() {
+						const container = document.getElementById("page-numbers");
+						if (!container) return;
+						container.innerHTML = "";
+						const ADJ_DIST = 2;
+						const VISIBLE = ADJ_DIST * 2 + 1;
+						let l = currentPage;
+						let r = currentPage;
+						let count = 1;
+						while (l - 1 > 0 && r + 1 <= lastPage && count + 2 <= VISIBLE) { count += 2; l--; r++; }
+						while (l - 1 > 0 && count < VISIBLE) { count++; l--; }
+						while (r + 1 <= lastPage && count < VISIBLE) { count++; r++; }
+
+						const pages = [];
+						if (l > 1) pages.push(1);
+						if (l === 3) pages.push(2);
+						if (l > 3) pages.push("...");
+						for (let i = l; i <= r; i++) pages.push(i);
+						if (r < lastPage - 2) pages.push("...");
+						if (r === lastPage - 2) pages.push(lastPage - 1);
+						if (r < lastPage) pages.push(lastPage);
+
+						pages.forEach((p) => {
+							if (p === "...") {
+								const span = document.createElement("span");
+								span.className = "mx-1 flex items-center text-50";
+								span.textContent = "…";
+								container.appendChild(span);
+								return;
+							}
+							const btn = document.createElement("button");
+							btn.type = "button";
+							btn.textContent = String(p);
+							btn.className =
+								p === currentPage
+									? "flex h-11 w-11 items-center justify-center rounded-lg bg-[var(--primary)] font-bold text-white dark:text-black/70"
+									: "btn-card flex h-11 w-11 items-center justify-center overflow-hidden rounded-lg active:scale-[0.85]";
+							btn.addEventListener("click", () => {
+								currentPage = p;
+								render();
+								document.getElementById("markdown-list")?.scrollIntoView({ behavior: "smooth", block: "start" });
+							});
+							container.appendChild(btn);
+						});
+					}
+
+					document.getElementById("page-first")?.addEventListener("click", () => { currentPage = 1; render(); });
+					document.getElementById("page-prev")?.addEventListener("click", () => { currentPage -= 1; render(); });
+					document.getElementById("page-next")?.addEventListener("click", () => { currentPage += 1; render(); });
+					document.getElementById("page-last")?.addEventListener("click", () => { currentPage = lastPage; render(); });
+
+					render();
+				})();
+			</script>
 		</div>
 	</div>
 </MainGridLayout>

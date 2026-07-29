@@ -106,12 +106,12 @@ const firstPostId = postViews[0]?.post.id ?? "";
 									<button
 										type="button"
 										class:list={[
-											"file-node flex w-full min-w-0 items-center gap-2 rounded-lg px-2 py-2 text-left text-sm transition hover:bg-[var(--btn-plain-bg-hover)] hover:text-[var(--primary)]",
+											"file-node flex w-full min-w-0 items-center gap-2 rounded-lg px-2 py-2 text-left text-sm text-75 transition hover:bg-[var(--btn-plain-bg-hover)] hover:text-[var(--primary)]",
 											{ "bg-[var(--btn-plain-bg-hover)] text-[var(--primary)]": folderIndex === 0 && postIndex === 0 },
 										]}
 										data-post-id={post.id}
 									>
-										<Icon name="material-symbols:description-outline-rounded" class="shrink-0 text-lg" />
+										<Icon name="material-symbols:description-outline-rounded" class="shrink-0 text-lg text-50" />
 										<span class="truncate">{post.data.title}</span>
 									</button>
 								))}
