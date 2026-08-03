@@ -2,8 +2,8 @@
 title: Hướng dẫn viết file Markdown
 published: 2026-07-29
 description: "File mẫu duy nhất để tham khảo cách viết và đăng bài Markdown trên web."
-tags: ["Markdown", "Hướng dẫn"]
-category: Hướng dẫn
+tags: ["Hướng dẫn"]
+category: Note
 draft: false
 ---
 

@@ -2,7 +2,8 @@
 title: SQL injection
 published: 2026-07-29
 draft: false
-tags: []
+tags: [sql]
+category: PostSwigger
 status: completed
 platform: portswigger
 ---

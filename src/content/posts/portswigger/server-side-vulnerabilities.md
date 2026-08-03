@@ -2,7 +2,8 @@
 title: Server-side vulnerabilities
 published: 2026-07-29
 draft: false
-tags: []
+tags: ["Hướng dẫn"]
+category: PostSwigger
 status: completed
 platform: portswigger
 ---

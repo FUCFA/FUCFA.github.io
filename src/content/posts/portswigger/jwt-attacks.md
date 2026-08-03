@@ -2,8 +2,9 @@
 title: JWT attacks
 published: 2026-07-29
 draft: false
-tags: []
+tags: ["jwt"]
 status: completed
+category: PostSwigger
 platform: portswigger
 ---
 >Note:

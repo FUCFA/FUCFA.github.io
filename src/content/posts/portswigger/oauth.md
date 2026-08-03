@@ -2,7 +2,8 @@
 title: OAuth
 published: 2026-07-29
 draft: false
-tags: []
+tags: ["oauth"]
+category: PostSwigger
 status: completed
 platform: portswigger
 ---
